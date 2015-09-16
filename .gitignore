@@ -1,0 +1,5 @@
+cpanfile.snapshot
+example.mmdb
+local
+*.swp
+tidyall.ERR
