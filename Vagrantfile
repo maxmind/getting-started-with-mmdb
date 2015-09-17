@@ -74,11 +74,15 @@ Vagrant.configure(2) do |config|
 
       # 'make' is part of build-essential
       sudo aptitude install -y build-essential curl libmaxminddb0 libmaxminddb-dev mmdb-bin
+      sudo aptitude install geoipupdate
 
       # install cpanm
       curl -L https://cpanmin.us | perl - App::cpanminus
 
       # install Perl modules from CPAN
-      cpanm Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network Data::Printer
+      cpanm Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network GeoIP2 Data::Printer
+
+      sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
+      sudo geoipupdate
   SHELL
 end
