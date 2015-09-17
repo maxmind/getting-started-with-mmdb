@@ -302,4 +302,220 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
     name           "Klaus"
 }
 ```
+
+The output shows us the first IP in each range (keep in mind that Jane's IP is actually just a "range" of one) and then displays the user data which we're now quite familiar with.
+
+
+## The Mashup
+
+Should we try to make this a little more complicated?  What would happen if we tried to take data from an existing GeoIP2 database and combine it with our custom MMDB file?
+
+If you're using the `Vagrant` VM, then you'll already have a copy of `GeoLite2-City.mmdb` in your `/user/share/GeoIP` folder.  If you're doing this some other way, you may need to download this file either via [geoipupdate](https://dev.maxmind.com/geoip/geoipupdate/) or by [downloading](https://dev.maxmind.com/geoip/geoip2/geolite2/) the file manually.  If you need more details on how we set this up, you can look at the `provision` section of the `Vagrantfile` in the GitHub repository.
+
+```
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use feature qw( say );
+
+use Data::Printer;
+use GeoIP2::Database::Reader;
+use MaxMind::DB::Writer::Tree;
+use Net::Works::Network;
+
+my $filename = 'users.mmdb';
+
+# This is the default GeoIP folder on the Ubuntu install 
+my $reader   = GeoIP2::Database::Reader->new(
+    file    => '/usr/share/GeoIP/GeoLite2-City.mmdb',
+    locales => ['en'],
+);
+
+# Your top level data structure will always be a map (hash).  The mmdb format
+# is strongly typed.  Describe your data types here.
+# See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
+
+my %types = (
+    city         => 'utf8_string',
+    country      => 'utf8_string',
+    environments => [ 'array', 'utf8_string' ],
+    expires      => 'uint32',
+    name         => 'utf8_string',
+    time_zone    => 'utf8_string',
+);
+
+my $tree = MaxMind::DB::Writer::Tree->new(
+
+    # "database_type" is some aritrary string describing the database.  AVt
+    # MaxMind we use strings like 'GeoIP2-City', 'GeoIP2-Country', etc.
+    database_type => 'My-IP-Data',
+
+    # "description" is a hashref where the keys are language names and the
+    # values are descriptions of the database in that language.
+    description =>
+        { en => 'My database of IP data', fr => 'Mon Data de IP', },
+
+    # "ip_version" can be either 4 or 6
+    ip_version => 4,
+
+    # add a callback to validate data going in to the database
+    map_key_type_callback => sub { $types{ $_[0] } },
+
+    # "record_size" is the record size in bits.  Either 24, 28 or 32.
+    record_size => 24,
+);
+
+my %address_for_employee = (
+    '4.4.4.4/32' => {
+        country      => 'US',
+        environments => [ 'development', 'staging', 'production' ],
+        expires      => 86400,
+        name         => 'Jane',
+    },
+    '8.8.8.8/28' => {
+        country      => 'US',
+        environments => [ 'development', 'staging' ],
+        expires      => 3600,
+        name         => 'Klaus',
+    },
+);
+
+for my $address ( keys %address_for_employee ) {
+
+    # Create one network and insert it into our database
+    my $network = Net::Works::Network->new_from_string( string => $address );
+    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+
+    my $user_metadata = $address_for_employee{$address};
+    
+    # Create a mashup using an existing GeoIP2 database
+    if ( $model->city->name ) {
+        $user_metadata->{city} = $model->city->name;
+    }
+    if ( $model->location->time_zone ) {
+        $user_metadata->{time_zone} = $model->location->time_zone;
+    }
+    $tree->insert_network( $network, $user_metadata );
+}
+
+# Write the database to disk.
+open my $fh, '>:raw', $filename;
+$tree->write_tree( $fh );
+close $fh;
+
+say "$filename has now been created";
+```
+
+```
+vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
+4.4.4.4/32
+\ {
+    country        "US",
+    environments   [
+        [0] "development",
+        [1] "staging",
+        [2] "production"
+    ],
+    expires        86400,
+    name           "Jane"
+}
+8.8.8.0/28
+\ {
+    city           "Mountain View",
+    country        "US",
+    environments   [
+        [0] "development",
+        [1] "staging"
+    ],
+    expires        3600,
+    name           "Klaus",
+    time_zone      "America/Los_Angeles"
+}
+```
  
+## The Breakdown
+
+You'll notice that we've just built on top of the file in our first example.  There are two additions.
+
+### Step 1
+We create a new reader object:
+
+```
+my $reader   = GeoIP2::Database::Reader->new(
+    file    => '/usr/share/GeoIP/GeoLite2-City.mmdb',
+    locales => ['en'],
+);
+```
+
+This file may be in a different location if you're not using `Vagrant`.  If you download it manually, feel free to put it whereever you want.
+
+### Step 2
+
+Now, we just need to take our existing data so that we can augment it with GeoIP2 data.
+
+```
+    my $network = Net::Works::Network->new_from_string( string => $address );
+    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+
+    my $user_metadata = $address_for_employee{$address};
+    
+    # Create a mashup using an existing GeoIP2 database
+    if ( $model->city->name ) {
+        $user_metadata->{city} = $model->city->name;
+    }
+    if ( $model->location->time_zone ) {
+        $user_metadata->{time_zone} = $model->location->time_zone;
+    }
+```
+
+As in our first example, we're creating a new `$network`.
+
+    my $network = Net::Works::Network->new_from_string( string => $address );
+    
+Now, we need to look up an IP address using the reader.  The reader expects a single IP and not a range.  We could get it by splitting our original key on `/`, but in this case we'll show how you can do it with a `$network` object.
+
+    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+
+All we're doing here is asking for the first IP in the range.  We need to pass the model a `string` rather than an `object`, so we call the `as_ipv4_string()` method.
+
+At this point we just add new keys to `Hash`.  Our new keys are `city` and `time_zone`.  Note that we only add them if they exist.  If we try to add an `undefined` value to the `Hash`, then an exception will be thrown.
+
+Now, let's see what we get.
+
+```
+vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
+4.4.4.4/32
+\ {
+    country        "US",
+    environments   [
+        [0] "development",
+        [1] "staging",
+        [2] "production"
+    ],
+    expires        86400,
+    name           "Jane"
+}
+8.8.8.0/28
+\ {
+    city           "Mountain View",
+    country        "US",
+    environments   [
+        [0] "development",
+        [1] "staging"
+    ],
+    expires        3600,
+    name           "Klaus",
+    time_zone      "America/Los_Angeles"
+}
+```
+
+Now, that looks a little bit better.  Note that we didn't find a city or time zone for Jane, so they haven't been included with her metadata.  GeoIP2 contains a lot of data, but there are some coverage gaps, so you'll need to allow for those when putting your custom database together.
+
+## Taking This Further
+
+Today we've shown how you can make your own MMDB databases and how you can augment them with data from a GeoIP2-City database.  We've only included a couple of data points, but MaxMind products contain much more information which you could potentially blend into your own database so that you can build something for your own needs.
+
+If you wanted to include the contents of an entire GeoIP2 database rather than just a select few, look into iterating over the search tree as we did in `examples/03-iterate-search-tree.pl`.
+
+If you are inserting both IP addresses and ranges, please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
