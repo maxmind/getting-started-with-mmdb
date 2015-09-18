@@ -66,15 +66,20 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
    config.vm.provision "shell", inline: <<-SHELL
 
+      sudo aptitude update
       # install 'add-apt-repository'
-      sudo aptitude install -y python-software-properties
+      sudo aptitude install -y python-software-properties software-properties-common
 
       sudo add-apt-repository ppa:maxmind/ppa
       sudo aptitude update
 
+      # Make subsequent provisioning work if initial install has failed
+      sudo rm /etc/GeoIP.conf
+
       # 'make' is part of build-essential
       sudo aptitude install -y build-essential curl libmaxminddb0 libmaxminddb-dev mmdb-bin
-      sudo aptitude install geoipupdate
+
+      sudo aptitude install -y geoipupdate
 
       # install cpanm
       curl -L https://cpanmin.us | perl - App::cpanminus
