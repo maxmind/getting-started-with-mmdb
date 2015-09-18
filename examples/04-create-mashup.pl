@@ -69,8 +69,6 @@ for my $address ( keys %address_for_employee ) {
     # Create one network and insert it into our database
     my $network = Net::Works::Network->new_from_string( string => $address );
     my $model = $reader->city( ip => $network->first->as_ipv4_string );
-    say np $model;
-    say np $model->country;
 
     my $user_metadata = $address_for_employee{$address};
     if ( $model->city->name ) {
