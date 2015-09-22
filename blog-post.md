@@ -13,10 +13,9 @@ Use [our GitHub repository](https://github.com/maxmind/getting-started-with-mmdb
 
 ## Getting Started
     
-In our example, we want to whitelist some IP addresses to allow them access to a VPN.  For each IP address or IP range, we need to track a few things about the person who is connecting from this IP.
+In our example, we want to whitelist some IP addresses to allow them access to a VPN or a hosted application.  For each IP address or IP range, we need to track a few things about the person who is connecting from this IP.
  
  * name
- * country
  * development enviroments to which they need access 
  * an arbitrary session expiration time, defined in seconds
 
@@ -212,7 +211,7 @@ Description: My database of IP data
 }
 ```
 
-We see that our `description` and our `Hash` of user data is returned exactly as we initially provided it.  But what about Klaus, is he also in the database?  Sure:
+We see that our `description` and our `Hash` of user data is returned exactly as we initially provided it.  But what about Klaus, is he also in the database?
 
 ```
 vagrant@precise64:/vagrant$ perl examples/02-reader.pl 8.8.8.0
@@ -519,6 +518,37 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
 ```
 
 Now, that looks a little bit better.  Note that we didn't find a city or time zone for Jane, so they haven't been included with her metadata.  GeoIP2 contains a lot of data, but there are some coverage gaps, so you'll need to allow for those when putting your custom database together.
+
+## Deploying our Application
+
+Now we're at the point where we can make use of our database.  With just a few lines of code you can now use your MMDB file to assist in the authorization of your application or VPN users.  For example, you might include the following lines in a class which implements your authentication.
+
+
+```
+use MaxMind::DB::Reader;
+
+my $reader = MaxMind::DB::Reader->new( file => '/path/to/users.mmdb' );
+
+sub is_ip_valid {
+    my $self   = shift;
+    my $ip     = shift;
+
+    my $record = $reader->record_for_address( $ip );
+    return 0 unless $record;
+
+    $self->set_session_expiration( $record->{expires} );
+    $self->set_time_zone( $record->{time_zone} ) if $record->{time_zone};
+    return 1;
+}
+```
+Here's a quick summary of what's going on.
+
+* As part of your deployment you'll naturally need to include your `users.mmdb` file, stored in the location of your choice.
+* You'll need to create a `MaxMind::DB::Reader` object to perform the lookup.
+* If the `$record` is undef, the IP could not be found.
+* If the IP is found, you can set a session expiration.
+* If the IP is found, you can also set a time zone for the user.  Keep in mind that it's possible that the `time_zone` key does not exist, so it's important that you don't assume it will always be available.
+
 
 ## Pro Tips
 
