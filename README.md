@@ -12,7 +12,11 @@ Now you (hopefully) have a running VM with everything you need already installed
     cd /vagrant
     perl examples/01-getting-started.pl
 
-If you've followed the instructions above, you are done.  No need to read any further.
+If you've followed the instructions above, you are ready to go.
+
+    perl examples/01-getting-started.pl
+
+That's it!  Read on if you want to install things manually.
 
 ## Manual Installation
 
@@ -40,7 +44,7 @@ If you're on Mac OS X and the above install fails, you can try forcing a 64 bit 
     
 Now you're ready to start running scripts:
 
-    perl /vagrant/examples/examples/01-getting-started.pl
+    perl examples/01-getting-started.pl
 
 ### GeoLite2-City
 
