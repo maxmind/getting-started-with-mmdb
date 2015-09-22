@@ -14,7 +14,6 @@ my $filename = 'users.mmdb';
 # See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
 
 my %types = (
-    country      => 'utf8_string',
     environments => [ 'array', 'utf8_string' ],
     expires      => 'uint32',
     name         => 'utf8_string',
@@ -42,14 +41,12 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 );
 
 my %address_for_employee = (
-    '4.4.4.4/32' => {
-        country      => 'US',
+    '123.125.71.29/32' => {
         environments => [ 'development', 'staging', 'production' ],
         expires      => 86400,
         name         => 'Jane',
     },
     '8.8.8.8/28' => {
-        country      => 'US',
         environments => [ 'development', 'staging' ],
         expires      => 3600,
         name         => 'Klaus',

@@ -1,40 +1,44 @@
 # Building Your Own MMDB Databases for Fun and Profit
-If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md). In this blog post, I'd like to provide an example of the benefits of using it to create your own custom MMDB databases.  
+If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md). 
 
-## Available Tools
+At MaxMind, we created the MMDB format because we needed a format that was very fast and highly portable.  MMDB comes with supported readers in many languages.  In this blog post, we’ll use MMDB to create a whitelist of IP addresses you could use when allowing users to access a VPN or a hosted application.
 
-The code samples we're using will use the [Perl MMDB database writer](https://metacpan.org/pod/MaxMind::DB::Writer) and the [Perl MMDB database reader](https://metacpan.org/pod/MaxMind::DB::Reader).  You'll need to use Perl to write your own MMDB files, but you there are also officially supported [.NET, PHP, Java and Python readers](https://github.com/maxmind?utf8=%E2%9C%93&query=reader) in addition to unsupported third party MMDB readers.  Many are listed on the [GeoIP2 download page](http://dev.maxmind.com/geoip/geoip2/downloadable/). So, as far as deployments go, you're not constrained to any one language when you want to read from the database.
+## Tools You'll Need
 
-## Getting the Code
+The code samples I include here use the [Perl MMDB database writer](https://metacpan.org/pod/MaxMind::DB::Writer) and the [Perl MMDB database reader](https://metacpan.org/pod/MaxMind::DB::Reader).  You'll need to use Perl to write your own MMDB files, but you can also work with officially supported [.NET, PHP, Java and Python readers](https://github.com/maxmind?utf8=%E2%9C%93&query=reader) in addition to unsupported third party MMDB readers.  Many are listed on the [GeoIP2 download page](http://dev.maxmind.com/geoip/geoip2/downloadable/). So, as far as deployments go, you're not constrained to any one language when you want to read from the database.
 
-If you want to follow along with the actual scripts, you can use [our GitHub repository](https://github.com/oalders/mmdb-getting-started).  You can use it to fire up a pre-configured Vagrant VM or just install the required modules manually.
+## Following Along
+
+Use [our GitHub repository](https://github.com/maxmind/getting-started-with-mmdb) to follow along with the actual scripts.  Fire up a pre-configured Vagrant VM or just install the required modules manually.
 
 ## Getting Started
     
-Let's start with a very simple example.  Let's say you want to whitelist some IP addresses to allow them access to your VPN.  For each IP address or IP range, we'll want to track a few things about the person who is connecting from this IP.
+In our example, we want to whitelist some IP addresses to allow them access to a VPN.  For each IP address or IP range, we need to track a few things about the person who is connecting from this IP.
  
- * their name
- * their country
- * the development enviroments they should have access to 
- * some arbitrary session expiration time, defined in seconds
+ * name
+ * country
+ * development enviroments to which they need access 
+ * an arbitrary session expiration time, defined in seconds
 
-Using MMDB to store your data, you might do something like this.  Our code will be in a file called `examples/01-getting-started.pl`
+To do so, we create the following the file `examples/01-getting-started.pl`
 
 ```
 #!/usr/bin/env perl
 
 use strict;
 use warnings;
+use feature qw( say );
 
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
+
+my $filename = 'users.mmdb';
 
 # Your top level data structure will always be a map (hash).  The mmdb format
 # is strongly typed.  Describe your data types here.
 # See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
 
 my %types = (
-    country      => 'utf8_string',
     environments => [ 'array', 'utf8_string' ],
     expires      => 'uint32',
     name         => 'utf8_string',
@@ -62,14 +66,12 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 );
 
 my %address_for_employee = (
-    '4.4.4.4/32' => {
-        country      => 'US',
+    '123.125.71.29/32' => {
         environments => [ 'development', 'staging', 'production' ],
         expires      => 86400,
         name         => 'Jane',
     },
     '8.8.8.8/28' => {
-        country      => 'US',
         environments => [ 'development', 'staging' ],
         expires      => 3600,
         name         => 'Klaus',
@@ -85,29 +87,33 @@ for my $address ( keys %address_for_employee ) {
 }
 
 # Write the database to disk.
-open my $fh, '>:raw', 'my-vpn.mmdb';
+open my $fh, '>:raw', $filename;
 $tree->write_tree( $fh );
 close $fh;
 
+say "$filename has now been created";
+
 ```
 
-## The Breakdown
+## The Code in Review
 
-There are basically 3 parts to the code.  
+The code consists of three parts:  
 
 ### Step 1 
-Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory while we're creating it.  
+Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory as it is created.  
 
 `MaxMind::DB::Writer::Tree->new(...)`
 
-The options we've used are all documented inside of the script.  There are other options as well.  They're all [fully documented](https://metacpan.org/pod/MaxMind::DB::Writer::Tree).  To keep things simple (and easily readable), we've used IPv4 to store addresses in this example, but we also could have used IPv6.
+The options we've used are all commented in the script, but there are additional options.  They're all [fully documented](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) as well.  To keep things simple (and easily readable), we used IPv4 to store addresses in this example, but you could also use IPv6.
 
-The `map_key_type_callback` is optional, but you're encouraged to use it in order to ensure the consistency of the data you're inserting.
+The `map_key_type_callback` is optional, but we recommend using it to ensure the consistency of the data you're inserting.
 
 ### Step 2
 For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object, which is essentially just a representation of the IP range.  The second is a `Hash` of values which describe the IP range.
 
 `$tree->insert_network( $network, $address_for_employee{$address} );`
+
+We've inserted information about two employees, Jane and Klaus.  They're both on different IP ranges.  You'll see that Jane has access to more environments than Klaus has, but Klaus could theoretically connect from any of 16 different IP addresses (/28) whereas Jane will only connect from one (/32).
 
 ### Step 3
 Open a filehandle and the write the database to disk.
@@ -120,7 +126,7 @@ close $fh;
 
 ## Let's Do This
 
-Now we're ready to run this script.
+Now we're ready to run the script.
     
     perl examples/01-getting-started.pl
     
@@ -128,11 +134,11 @@ Your output should look something like:
 
     users.mmdb has now been created
     
-You should also see the file mentioned above in the folder from which you ran the script.  That's it.  Easy, right?
+You should also see the file mentioned above in the folder from which you ran the script.
 
-## From Writing to Reading
+## Reading the File
 
-We've got our brand new MMDB file. Now, let's try to read the information we just stored in it.
+Now that we have our brand new MMDB file. Let's read the information we stored in it.
 
 ```
 #!/usr/bin/env perl
@@ -155,43 +161,47 @@ my $record = $reader->record_for_address( $ip );
 say np $record;
 ```
 
-## The Breakdown
+## File Reading - Review
 
 ### Step 1
 
 Ensure that the user has provided an IP address via the command line.
 
+    my $ip = shift @ARGV or die 'Usage: perl examples/02-reader.pl [ip_address]';
+
 ### Step 2
 
 We create a new [MaxMind::DB::Reader](https://metacpan.org/pod/MaxMind::DB::Reader) object, using the name of the file we just created as the sole argument.
 
+    my $reader = MaxMind::DB::Reader->new( file => 'users.mmdb' );
+
 ### Step 3
 
-Check the metadata.  This is entirely optional, but here we check to ensure that the description which we added to the metadata in the previous script is there.  
+Check the metadata.  This is optional, but here we check to ensure that we find the description we added to the metadata in the previous script.  
 
     say 'Description: ' . $reader->metadata->{description}->{en};
 
-Beyond the `description`, there is much more metadata to be had.  `$reader->metadata` returns a [MaxMind::DB::Metadata](https://metacpan.org/pod/MaxMind::DB::Metadata) which can give you much more information about the file you just creatd.
+Much more metadata is available in addition to the `description`.  `$reader->metadata` returns a [MaxMind::DB::Metadata](https://metacpan.org/pod/MaxMind::DB::Metadata) which provides much more information about the file you created.
 
 ### Step 4
 
 We perform a record lookup and dump it using Data::Printer's handy `np()` method.
 
-    my $record_for_jane = $reader->record_for_address( '4.4.4.4' );
+    my $record_for_jane = $reader->record_for_address( '123.125.71.29' );
     say np $record_for_jane;
 
-## Let's Do This
+## Running the Script
 
-Let's actually run this script:
+Now let's run the script and perform a lookup on Jane's IP address:
 
-    perl examples/02-reader.pl 4.4.4.4
+    perl examples/02-reader.pl 123.125.71.29
     
 Your output should look something like this: 
 
 ```
+vagrant@precise64:/vagrant$ perl examples/02-reader.pl 123.125.71.29
 Description: My database of IP data
 \ {
-    country        "US",
     environments   [
         [0] "development",
         [1] "staging",
@@ -208,7 +218,6 @@ We see that our `description` and our `Hash` of user data is returned exactly as
 vagrant@precise64:/vagrant$ perl examples/02-reader.pl 8.8.8.0
 Description: My database of IP data
 \ {
-    country        "US",
     environments   [
         [0] "development",
         [1] "staging"
@@ -219,7 +228,6 @@ Description: My database of IP data
 vagrant@precise64:/vagrant$ perl examples/02-reader.pl 8.8.8.15
 Description: My database of IP data
 \ {
-    country        "US",
     environments   [
         [0] "development",
         [1] "staging"
@@ -236,7 +244,7 @@ We gave Klaus an IP range of `8.8.8.8/28`, which translates to `8.8.8.0 to 8.8.8
 
 ## Iterating Over the Search Tree
 
-What if we don't want to look up every address individually.  Is there a way to speed things up?  As it happens, there is.
+It takes time to look up every address individually.  Is there a way to speed things up?  As it happens, there is.
 
 ```
 #!/usr/bin/env perl
@@ -266,7 +274,7 @@ $reader->iterate_search_tree(
 ```
 
 
-## The Breakdown
+## Iterating: Review
 
 ### Step 1
 
@@ -274,15 +282,23 @@ As in the previous example, we create a new `MaxMind::DB::Reader` object.
 
 ### Step 2
 
-All we need to do in order to dump our data is to pass an anonymous subroutine to the [iterate_search_tree()  method](https://metacpan.org/pod/MaxMind::DB::Reader#reader-iterate_search_tree-data_callback-node_callback).  (This method can actually take two callbacks, but the second callback is for debugging the actual nodes in the tree -- that's too low level for our purposes today).
+To dump our data, we pass an anonymous subroutine to the [iterate_search_tree()  method](https://metacpan.org/pod/MaxMind::DB::Reader#reader-iterate_search_tree-data_callback-node_callback).  (This method can actually take two callbacks, but the second callback is for debugging the actual nodes in the tree -- that's too low level for our purposes today).
 
-We've named the 3 arguments which are passed to the callback appropriate, so there's not much more to say about them.  Let's see the output.
+We've appropriately named the three arguments which are passed to the callback, so there's not much more to say about them.  Let's look at the output.
 
 ```
 vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
-4.4.4.4/32
+8.8.8.0/28
 \ {
-    country        "US",
+    environments   [
+        [0] "development",
+        [1] "staging"
+    ],
+    expires        3600,
+    name           "Klaus"
+}
+123.125.71.29/32
+\ {
     environments   [
         [0] "development",
         [1] "staging",
@@ -291,26 +307,18 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
     expires        86400,
     name           "Jane"
 }
-8.8.8.0/28
-\ {
-    country        "US",
-    environments   [
-        [0] "development",
-        [1] "staging"
-    ],
-    expires        3600,
-    name           "Klaus"
-}
 ```
 
-The output shows us the first IP in each range (keep in mind that Jane's IP is actually just a "range" of one) and then displays the user data which we're now quite familiar with.
+The output shows the first IP in each range (note that Jane's IP is just a "range" of one) and then displays the user data with which we're now familiar.
 
 
 ## The Mashup
 
-Should we try to make this a little more complicated?  What would happen if we tried to take data from an existing GeoIP2 database and combine it with our custom MMDB file?
+To extend our example, let’s take the data from an existing GeoIP2 database and combine it with our custom MMDB file.
 
-If you're using the `Vagrant` VM, then you'll already have a copy of `GeoLite2-City.mmdb` in your `/user/share/GeoIP` folder.  If you're doing this some other way, you may need to download this file either via [geoipupdate](https://dev.maxmind.com/geoip/geoipupdate/) or by [downloading](https://dev.maxmind.com/geoip/geoip2/geolite2/) the file manually.  If you need more details on how we set this up, you can look at the `provision` section of the `Vagrantfile` in the GitHub repository.
+If you're using the `Vagrant` VM, you have a copy of `GeoLite2-City.mmdb` in `/user/share/GeoIP`.  If not, you may need to [download this file](https://dev.maxmind.com/geoip/geoip2/geolite2/) or use [geoipupdate](https://dev.maxmind.com/geoip/geoipupdate/).  For more details on how to set this up, you can look at the `provision` section of the `Vagrantfile` in the GitHub repository.
+
+You can take any number of fields from existing MaxMind databases to create your own custom database.  In this case, let's extend our existing database by adding `city`, `country` and `time_zone` fields for each IP range.
 
 ```
 #!/usr/bin/env perl
@@ -319,14 +327,11 @@ use strict;
 use warnings;
 use feature qw( say );
 
-use Data::Printer;
 use GeoIP2::Database::Reader;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
 my $filename = 'users.mmdb';
-
-# This is the default GeoIP folder on the Ubuntu install 
 my $reader   = GeoIP2::Database::Reader->new(
     file    => '/usr/share/GeoIP/GeoLite2-City.mmdb',
     locales => ['en'],
@@ -367,14 +372,12 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 );
 
 my %address_for_employee = (
-    '4.4.4.4/32' => {
-        country      => 'US',
+    '123.125.71.29/32' => {
         environments => [ 'development', 'staging', 'production' ],
         expires      => 86400,
         name         => 'Jane',
     },
     '8.8.8.8/28' => {
-        country      => 'US',
         environments => [ 'development', 'staging' ],
         expires      => 3600,
         name         => 'Klaus',
@@ -388,10 +391,11 @@ for my $address ( keys %address_for_employee ) {
     my $model = $reader->city( ip => $network->first->as_ipv4_string );
 
     my $user_metadata = $address_for_employee{$address};
-    
-    # Create a mashup using an existing GeoIP2 database
     if ( $model->city->name ) {
         $user_metadata->{city} = $model->city->name;
+    }
+    if ( $model->country->name ) {
+        $user_metadata->{country} = $model->country->name;
     }
     if ( $model->location->time_zone ) {
         $user_metadata->{time_zone} = $model->location->time_zone;
@@ -407,23 +411,14 @@ close $fh;
 say "$filename has now been created";
 ```
 
+Now, when we iterate of the search tree, we'll see that the data has been augmented with the new fields.
+
 ```
 vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
-4.4.4.4/32
-\ {
-    country        "US",
-    environments   [
-        [0] "development",
-        [1] "staging",
-        [2] "production"
-    ],
-    expires        86400,
-    name           "Jane"
-}
 8.8.8.0/28
 \ {
     city           "Mountain View",
-    country        "US",
+    country        "United States",
     environments   [
         [0] "development",
         [1] "staging"
@@ -432,11 +427,24 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
     name           "Klaus",
     time_zone      "America/Los_Angeles"
 }
+123.125.71.29/32
+\ {
+    city           "Beijing",
+    country        "China",
+    environments   [
+        [0] "development",
+        [1] "staging",
+        [2] "production"
+    ],
+    expires        86400,
+    name           "Jane",
+    time_zone      "Asia/Shanghai"
+}
 ```
  
-## The Breakdown
+## Adding GeoLite2-City Data (Review)
 
-You'll notice that we've just built on top of the file in our first example.  There are two additions.
+To extend our example we make two additions to our original file:
 
 ### Step 1
 We create a new reader object:
@@ -448,11 +456,11 @@ my $reader   = GeoIP2::Database::Reader->new(
 );
 ```
 
-This file may be in a different location if you're not using `Vagrant`.  If you download it manually, feel free to put it whereever you want.
+Note that this file may be in a different location if you're not using `Vagrant`.  Adjust accordingly.
 
 ### Step 2
 
-Now, we just need to take our existing data so that we can augment it with GeoIP2 data.
+Now, we take our existing data so that we can augment it with GeoIP2 data.
 
 ```
     my $network = Net::Works::Network->new_from_string( string => $address );
@@ -469,17 +477,17 @@ Now, we just need to take our existing data so that we can augment it with GeoIP
     }
 ```
 
-As in our first example, we're creating a new `$network`.
+As in our first example, we're create a new `$network`.
 
     my $network = Net::Works::Network->new_from_string( string => $address );
     
-Now, we need to look up an IP address using the reader.  The reader expects a single IP and not a range.  We could get it by splitting our original key on `/`, but in this case we'll show how you can do it with a `$network` object.
+The next step is to look up an IP address using the reader.  The reader expects a single IP and not a range.  We could get it by splitting our original key on `/`, but in this case we do it with a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object.
 
     my $model = $reader->city( ip => $network->first->as_ipv4_string );
 
 All we're doing here is asking for the first IP in the range.  We need to pass the model a `string` rather than an `object`, so we call the `as_ipv4_string()` method.
 
-At this point we just add new keys to `Hash`.  Our new keys are `city` and `time_zone`.  Note that we only add them if they exist.  If we try to add an `undefined` value to the `Hash`, then an exception will be thrown.
+Next we add new keys to `Hash`.  The new keys are `country`, `city` and `time_zone`.  Note that we only add them if they exist.  If we try to add an `undefined` value to the `Hash`, it an exception will be thrown.
 
 Now, let's see what we get.
 
@@ -512,10 +520,13 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
 
 Now, that looks a little bit better.  Note that we didn't find a city or time zone for Jane, so they haven't been included with her metadata.  GeoIP2 contains a lot of data, but there are some coverage gaps, so you'll need to allow for those when putting your custom database together.
 
+## Pro Tips
+
+To include the contents of an entire GeoIP2 database rather than selected data points, iterate over the search tree as we did in `examples/03-iterate-search-tree.pl`.
+
+To learn more about inserting both IP addresses and ranges, please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
+
 ## Taking This Further
 
-Today we've shown how you can make your own MMDB databases and how you can augment them with data from a GeoIP2-City database.  We've only included a couple of data points, but MaxMind products contain much more information which you could potentially blend into your own database so that you can build something for your own needs.
+Today we've shown how you can create your own MMDB databases and augment it with data from a GeoLite2-City database.  We've only included a few data points, but MaxMind databases contain much more data you can use to build a solution to meet your business requirements.
 
-If you wanted to include the contents of an entire GeoIP2 database rather than just a select few, look into iterating over the search tree as we did in `examples/03-iterate-search-tree.pl`.
-
-If you are inserting both IP addresses and ranges, please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.

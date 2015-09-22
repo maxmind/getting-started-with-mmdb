@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use feature qw( say );
 
-use Data::Printer;
 use GeoIP2::Database::Reader;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
@@ -50,14 +49,12 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 );
 
 my %address_for_employee = (
-    '4.4.4.4/32' => {
-        country      => 'US',
+    '123.125.71.29/32' => {
         environments => [ 'development', 'staging', 'production' ],
         expires      => 86400,
         name         => 'Jane',
     },
     '8.8.8.8/28' => {
-        country      => 'US',
         environments => [ 'development', 'staging' ],
         expires      => 3600,
         name         => 'Klaus',
@@ -73,6 +70,9 @@ for my $address ( keys %address_for_employee ) {
     my $user_metadata = $address_for_employee{$address};
     if ( $model->city->name ) {
         $user_metadata->{city} = $model->city->name;
+    }
+    if ( $model->country->name ) {
+        $user_metadata->{country} = $model->country->name;
     }
     if ( $model->location->time_zone ) {
         $user_metadata->{time_zone} = $model->location->time_zone;
