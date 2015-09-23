@@ -510,7 +510,7 @@ As in our first example, we're create a new `Net::Works::Network` object.  Howev
 
 In order for this to work, we set `merge_record_collisions => 1` when we created the `MaxMind::DB::Writer::Tree` object.  This allows the writer to be smart about merging ranges rather than letting the last range to be added clobber any overlapping addresses.
 
-Note that this approach is fine for a small database, but it likely will not scale well in terms of creating speed for a database with a large number of records.  If you're looking to create a very large database and speed is an issue, you are encouraged to look into using the MaxMind CSVs to seed your database.  Alternatively, you could first check the IP ranges in GeoLite2-City-Blocks-IPv4.csv to check for any overlapping ranges before inserting.  If there are no overlaps, you can insert the entire range at once rather than individual IP addresses.
+Note that this approach is fine for a small database, but it likely will not scale well in terms of speed when writing a database with a large number of records.  If you're looking to create a very large database and speed is an issue, you are encouraged to look into using the MaxMind CSVs to seed your database.  Alternatively, you could first check the IP ranges in GeoLite2-City-Blocks-IPv4.csv to check for any overlapping ranges before inserting.  If there are no overlaps, you can insert the entire range at once rather than individual IP addresses.
 
 Iterating over a network is trivial.
 
@@ -610,13 +610,15 @@ A very simple way to get started is to iterate over the search tree using `MaxMi
 
 #### Parsing a CSV
 
-This requires slightly more logic, but just reading a CSV file line by line will give you a significant boost in speed.  Free downloads of CSV files for GeoLite2 City and GeoLite2 Country [are available from MaxMind.com](https://dev.maxmind.com/geoip/geoip2/geolite2/)  If you're using the Vagrant VM, you'll find `GeoLite2-City-Blocks-IPv4.csv` and `GeoLite2-City-Locations-en.csv` already in your `/vagrant` directory. `examples/06-read-csv.pl` will give you a head start on parsing these CSVs.
+This requires slightly more logic, but reading a CSV file line by line will give you a significant speed boost over search tree iteration.
+
+Free downloads of CSV files for GeoLite2 City and GeoLite2 Country [are available from MaxMind.com](https://dev.maxmind.com/geoip/geoip2/geolite2/)  If you're using the Vagrant VM, you'll find `GeoLite2-City-Blocks-IPv4.csv` and `GeoLite2-City-Locations-en.csv` already in your `/vagrant` directory. `examples/06-read-csv.pl` will give you a head start on parsing these CSVs.
 
 ### Insert Order, Merging and Overwriting
 
-In our simple examples, we haven't dealt with any overlapping IP ranges, but it's important to understand `MaxMind::DB::Writer`'s configurable behaviour for inserting ranges.  Please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
+It's important to understand `MaxMind::DB::Writer`'s configurable behaviour for inserting ranges.  Please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across when writing your own database files.
 
 ## Taking This Further
 
-Today we've shown how you can create your own MMDB databases and augment it with data from a GeoLite2-City database.  We've only included a few data points, but MaxMind databases contain much more data you can use to build a solution to meet your business requirements.
+Today we've shown how you can create your own MMDB database and augment it with data from a GeoLite2-City database.  We've only included a few data points, but MaxMind databases contain much more data you can use to build a solution to meet your business requirements.
 
