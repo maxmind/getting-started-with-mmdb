@@ -77,7 +77,7 @@ Vagrant.configure(2) do |config|
       sudo rm -f /etc/GeoIP.conf
 
       # 'make' is part of build-essential
-      sudo aptitude install -y build-essential curl libmaxminddb0 libmaxminddb-dev mmdb-bin
+      sudo aptitude install -y build-essential curl libmaxminddb0 libmaxminddb-dev mmdb-bin unzip
 
       sudo aptitude install -y geoipupdate
 
@@ -85,9 +85,16 @@ Vagrant.configure(2) do |config|
       curl -L https://cpanmin.us | perl - App::cpanminus
 
       # install Perl modules from CPAN
-      cpanm --notest Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network GeoIP2 Data::Printer
+      cpanm --notest Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network GeoIP2 Data::Printer Text::CSV_XS
 
       sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
       sudo geoipupdate
+
+      rm -rf /tmp/csv
+      mkdir  /tmp/csv
+      curl https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/csv/GeoLite2-City-CSV.zip
+      unzip -o /tmp/GeoLite2-City-CSV.zip -d /tmp/csv/
+      find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
+      find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
   SHELL
 end
