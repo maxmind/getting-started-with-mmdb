@@ -2,11 +2,11 @@
 
 ## Vagrant
 
-If you use [Vagrant](https://www.vagrantup.com/), you can get started easily. After cloning this repository, `chdir` to the top directory.  Then issue the following commands:
+If you use [Vagrant](https://www.vagrantup.com/), you can get started easily. After cloning this repository, issue the following command from the top level of the repository:
 
     vagrant up
     
-Now you (hopefully) have a running VM with everything you need already installed.  You can now log in to your VM and start running commands.
+If you are starting this Vagrant VM for the first time, you might want to make yourself a sandwich.  Depending on your setup it could take 6-10 minutes before your VM is ready.  Once the provisioning is finished, you can log in to your VM and start running commands.
     
     vagrant ssh
     cd /vagrant
@@ -20,9 +20,18 @@ That's it!  Read on if you want to install things manually.
 
 ## Manual Installation
 
+### Caveat for Windows Users
+
+`MaxMind::DB::Writer` is not currently supported on Windows Operating Systems.  If you're in a Windows environment, you may want to try setting up the Vagrant VM by following the instructions above.
+
+### Perl
+
+You'll need Perl to run the example code.  Unless you're in a Windows environment, you probably already have Perl installed.  A minimum version of 5.14 is enough to get started with.  You can check your version via `perl --version`.
+
+
 ### libmaxminddb
 
-First you'll need to install [libmaxminddb](https://github.com/maxmind/libmaxminddb)
+Before installing any Perl modules you'll need to install [libmaxminddb](https://github.com/maxmind/libmaxminddb).
 
 ### cpanminus
 
