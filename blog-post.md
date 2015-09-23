@@ -582,7 +582,7 @@ This requires slightly more logic, but just reading a CSV file line by line will
 
 ### Insert Order, Merging and Overwriting
 
-To learn more about inserting both IP addresses and ranges, please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
+In our simple examples, we haven't dealt with any overlapping IP ranges, but it's important to understand `MaxMind::DB::Writer`'s configurable behaviour for inserting ranges.  Please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
 
 ## Taking This Further
 
