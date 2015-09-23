@@ -1,4 +1,4 @@
-# Building Your Own MMDB Databases for Fun and Profit
+# Building Your Own MMDB Database for Fun and Profit
 If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md). 
 
 At MaxMind, we created the MMDB format because we needed a format that was very fast and highly portable.  MMDB comes with supported readers in many languages.  In this blog post, we’ll create an MMDB file which contains a whitelist of IP addresses.  This kind of database could be used when allowing access to a VPN or a hosted application.
@@ -16,7 +16,7 @@ Use [our GitHub repository](https://github.com/maxmind/getting-started-with-mmdb
 In our example, we want to whitelist some IP addresses to allow them access to a VPN or a hosted application.  For each IP address or IP range, we need to track a few things about the person who is connecting from this IP.
  
  * name
- * development enviroments to which they need access 
+ * development environments to which they need access
  * an arbitrary session expiration time, defined in seconds
 
 To do so, we create the following the file `examples/01-getting-started.pl`
@@ -95,8 +95,6 @@ say "$filename has now been created";
 
 ## The Code in Review
 
-The code consists of three parts:  
-
 ### Step 1 
 Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory as it is created.  
 
@@ -140,7 +138,7 @@ You should also see the file mentioned above in the folder from which you ran th
 
 ## Reading the File
 
-Now that we have our brand new MMDB file. Let's read the information we stored in it.
+Now we have our brand new MMDB file. Let's read the information we stored in it.
 
 ```perl
 #!/usr/bin/env perl
@@ -163,7 +161,7 @@ my $record = $reader->record_for_address( $ip );
 say np $record;
 ```
 
-## File Reading - Review
+## Reading the File Reading: Review
 
 ### Step 1
 
@@ -292,7 +290,7 @@ As in the previous example, we create a new `MaxMind::DB::Reader` object.
 
 ### Step 2
 
-To dump our data, we pass an anonymous subroutine to the [iterate_search_tree()  method](https://metacpan.org/pod/MaxMind::DB::Reader#reader-iterate_search_tree-data_callback-node_callback).  (This method can actually take two callbacks, but the second callback is for debugging the actual nodes in the tree -- that's too low level for our purposes today).
+To dump our data, we pass an anonymous subroutine to the [iterate_search_tree()  method](https://metacpan.org/pod/MaxMind::DB::Reader#reader-iterate_search_tree-data_callback-node_callback).  (This method can actually take two callbacks, but the second callback is for debugging the actual nodes in the tree -- that's too low level for our purposes today.)
 
 We've appropriately named the three arguments which are passed to the callback, so there's not much more to say about them.  Let's look at the output.
 
@@ -328,7 +326,8 @@ To extend our example, let’s take the data from an existing GeoIP2 database an
 
 If you're using the `Vagrant` VM, you have a copy of `GeoLite2-City.mmdb` in `/user/share/GeoIP`.  If not, you may need to [download this file](https://dev.maxmind.com/geoip/geoip2/geolite2/) or use [geoipupdate](https://dev.maxmind.com/geoip/geoipupdate/).  For more details on how to set this up, you can look at the `provision` section of the `Vagrantfile` in the GitHub repository.
 
-You can take any number of fields from existing MaxMind databases to create your own custom database.  In this case, let's extend our existing database by adding `city`, `country` and `time_zone` fields for each IP range.
+You can take any number of fields from existing MaxMind databases to create your own custom database.  In this case, let's extend our existing database by adding `city`, `country` and `time_zone` fields for each IP range.  We can use this information to (possibly) customize the user's environment.  We can use the time zone when displaying dates or times.  We can limit access to certain features based on the country in the user currently is.
+
 
 ```perl
 #!/usr/bin/env perl
@@ -463,7 +462,7 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
 }
 ```
  
-## Adding GeoLite2-City Data (Review)
+## Adding GeoLite2-City Data: Review
 
 To extend our example we make two additions to our original file:
 
@@ -590,7 +589,7 @@ sub is_ip_valid {
     return 1;
 }
 ```
-Here's a quick summary of what's going on.
+Here's a quick summary of what's going on:
 
 * As part of your deployment you'll naturally need to include your `users.mmdb` file, stored in the location of your choice.
 * You'll need to create a `MaxMind::DB::Reader` object to perform the lookup.
