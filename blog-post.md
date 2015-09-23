@@ -1,11 +1,11 @@
 # Building Your Own MMDB Databases for Fun and Profit
 If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md). 
 
-At MaxMind, we created the MMDB format because we needed a format that was very fast and highly portable.  MMDB comes with supported readers in many languages.  In this blog post, we’ll use MMDB to create a whitelist of IP addresses you could use when allowing users to access a VPN or a hosted application.
+At MaxMind, we created the MMDB format because we needed a format that was very fast and highly portable.  MMDB comes with supported readers in many languages.  In this blog post, we’ll create an MMDB file which contains a whitelist of IP addresses.  This kind of database could be used when allowing access to a VPN or a hosted application.
 
 ## Tools You'll Need
 
-The code samples I include here use the [Perl MMDB database writer](https://metacpan.org/pod/MaxMind::DB::Writer) and the [Perl MMDB database reader](https://metacpan.org/pod/MaxMind::DB::Reader).  You'll need to use Perl to write your own MMDB files, but you can also work with officially supported [.NET, PHP, Java and Python readers](https://github.com/maxmind?utf8=%E2%9C%93&query=reader) in addition to unsupported third party MMDB readers.  Many are listed on the [GeoIP2 download page](http://dev.maxmind.com/geoip/geoip2/downloadable/). So, as far as deployments go, you're not constrained to any one language when you want to read from the database.
+The code samples I include here use the [Perl MMDB database writer](https://metacpan.org/pod/MaxMind::DB::Writer) and the [Perl MMDB database reader](https://metacpan.org/pod/MaxMind::DB::Reader).  You'll need to use Perl to write your own MMDB files, but you can read the files with the officially supported [.NET, PHP, Java and Python readers](https://github.com/maxmind?utf8=%E2%9C%93&query=reader) in addition to unsupported third party MMDB readers.  Many are listed on the [GeoIP2 download page](http://dev.maxmind.com/geoip/geoip2/downloadable/). So, as far as deployments go, you're not constrained to any one language when you want to read from the database.
 
 ## Following Along
 
@@ -107,10 +107,10 @@ MaxMind::DB::Writer::Tree->new(...)
 
 The options we've used are all commented in the script, but there are additional options.  They're all [fully documented](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) as well.  To keep things simple (and easily readable), we used IPv4 to store addresses in this example, but you could also use IPv6.
 
-The `map_key_type_callback` is optional, but we recommend using it to ensure the consistency of the data you're inserting.
+We haven't used all available types in this script.  For example, we also could have used a `map` to store some of these valued.  You're encouraged to review [the full list of available types](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES) which can be used in `map_key_type_callback`.
 
 ### Step 2
-For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object, which is essentially just a representation of the IP range.  The second is a `Hash` of values which describe the IP range.
+For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object, which is essentially just a representation of the IP range.  The second is a hash reference of values which describe the IP range.
 
 ```perl
 $tree->insert_network( $network, $address_for_employee{$address} );
