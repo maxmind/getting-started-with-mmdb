@@ -568,7 +568,19 @@ Here's a quick summary of what's going on.
 
 ## Pro Tips
 
-To include the contents of an entire GeoIP2 database rather than selected data points, iterate over the search tree as we did in `examples/03-iterate-search-tree.pl`.
+### Including the Contents of an Entire MaxMind DB
+
+To include the contents of an entire GeoIP2 database rather than selected data points, you have a couple of options for iterating over a database in Perl.
+
+#### MaxMind::DB::Reader
+
+A very simple way to get started is to iterate over the search tree using `MaxMind::DB::Reader` as we did in `examples/03-iterate-search-tree.pl`.  However, note that iterating over the entire tree using the Perl reader can be quite slow.
+
+#### Parsing a CSV
+
+This requires slightly more logic, but just reading a CSV file line by line will give you a significant boost in speed.  Free downloads of CSV files for GeoLite2 City and GeoLite2 Country [are available from MaxMind.com](https://dev.maxmind.com/geoip/geoip2/geolite2/)
+
+### Insert Order, Merging and Overwriting
 
 To learn more about inserting both IP addresses and ranges, please see our documentation on [Insert Order, Merging and Overwriting](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#Insert-Order-Merging-and-Overwriting) so that you can choose the correct behaviour for any overlapping IP ranges you may come across.
 
