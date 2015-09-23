@@ -21,7 +21,7 @@ In our example, we want to whitelist some IP addresses to allow them access to a
 
 To do so, we create the following the file `examples/01-getting-started.pl`
 
-```
+```perl
 #!/usr/bin/env perl
 
 use strict;
@@ -101,7 +101,9 @@ The code consists of three parts:
 ### Step 1 
 Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory as it is created.  
 
-`MaxMind::DB::Writer::Tree->new(...)`
+```perl
+MaxMind::DB::Writer::Tree->new(...)
+```
 
 The options we've used are all commented in the script, but there are additional options.  They're all [fully documented](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) as well.  To keep things simple (and easily readable), we used IPv4 to store addresses in this example, but you could also use IPv6.
 
@@ -110,14 +112,16 @@ The `map_key_type_callback` is optional, but we recommend using it to ensure the
 ### Step 2
 For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object, which is essentially just a representation of the IP range.  The second is a `Hash` of values which describe the IP range.
 
-`$tree->insert_network( $network, $address_for_employee{$address} );`
+```perl
+$tree->insert_network( $network, $address_for_employee{$address} );
+```
 
 We've inserted information about two employees, Jane and Klaus.  They're both on different IP ranges.  You'll see that Jane has access to more environments than Klaus has, but Klaus could theoretically connect from any of 16 different IP addresses (/28) whereas Jane will only connect from one (/32).
 
 ### Step 3
 Open a filehandle and the write the database to disk.
 
-```
+```perl
 open my $fh, '>:raw', 'my-vpn.mmdb';
 $tree->write_tree( $fh );
 close $fh;
@@ -139,7 +143,7 @@ You should also see the file mentioned above in the folder from which you ran th
 
 Now that we have our brand new MMDB file. Let's read the information we stored in it.
 
-```
+```perl
 #!/usr/bin/env perl
 
 use strict;
@@ -166,19 +170,25 @@ say np $record;
 
 Ensure that the user has provided an IP address via the command line.
 
-    my $ip = shift @ARGV or die 'Usage: perl examples/02-reader.pl [ip_address]';
+```perl
+my $ip = shift @ARGV or die 'Usage: perl examples/02-reader.pl [ip_address]';
+```
 
 ### Step 2
 
 We create a new [MaxMind::DB::Reader](https://metacpan.org/pod/MaxMind::DB::Reader) object, using the name of the file we just created as the sole argument.
 
-    my $reader = MaxMind::DB::Reader->new( file => 'users.mmdb' );
+```perl
+my $reader = MaxMind::DB::Reader->new( file => 'users.mmdb' );
+```
 
 ### Step 3
 
 Check the metadata.  This is optional, but here we check to ensure that we find the description we added to the metadata in the previous script.  
 
-    say 'Description: ' . $reader->metadata->{description}->{en};
+```perl
+say 'Description: ' . $reader->metadata->{description}->{en};
+```
 
 Much more metadata is available in addition to the `description`.  `$reader->metadata` returns a [MaxMind::DB::Metadata](https://metacpan.org/pod/MaxMind::DB::Metadata) which provides much more information about the file you created.
 
@@ -186,8 +196,10 @@ Much more metadata is available in addition to the `description`.  `$reader->met
 
 We perform a record lookup and dump it using Data::Printer's handy `np()` method.
 
-    my $record_for_jane = $reader->record_for_address( '123.125.71.29' );
-    say np $record_for_jane;
+```perl
+my $record_for_jane = $reader->record_for_address( '123.125.71.29' );
+say np $record_for_jane;
+```
 
 ## Running the Script
 
@@ -197,7 +209,7 @@ Now let's run the script and perform a lookup on Jane's IP address:
     
 Your output should look something like this: 
 
-```
+```perl
 vagrant@precise64:/vagrant$ perl examples/02-reader.pl 123.125.71.29
 Description: My database of IP data
 \ {
@@ -245,7 +257,7 @@ We gave Klaus an IP range of `8.8.8.8/28`, which translates to `8.8.8.0 to 8.8.8
 
 It takes time to look up every address individually.  Is there a way to speed things up?  As it happens, there is.
 
-```
+```perl
 #!/usr/bin/env perl
 
 use strict;
@@ -319,7 +331,7 @@ If you're using the `Vagrant` VM, you have a copy of `GeoLite2-City.mmdb` in `/u
 
 You can take any number of fields from existing MaxMind databases to create your own custom database.  In this case, let's extend our existing database by adding `city`, `country` and `time_zone` fields for each IP range.
 
-```
+```perl
 #!/usr/bin/env perl
 
 use strict;
@@ -448,7 +460,7 @@ To extend our example we make two additions to our original file:
 ### Step 1
 We create a new reader object:
 
-```
+```perl
 my $reader   = GeoIP2::Database::Reader->new(
     file    => '/usr/share/GeoIP/GeoLite2-City.mmdb',
     locales => ['en'],
@@ -461,7 +473,7 @@ Note that this file may be in a different location if you're not using `Vagrant`
 
 Now, we take our existing data so that we can augment it with GeoIP2 data.
 
-```
+```perl
     my $network = Net::Works::Network->new_from_string( string => $address );
     my $model = $reader->city( ip => $network->first->as_ipv4_string );
 
@@ -478,11 +490,15 @@ Now, we take our existing data so that we can augment it with GeoIP2 data.
 
 As in our first example, we're create a new `$network`.
 
-    my $network = Net::Works::Network->new_from_string( string => $address );
+```perl
+my $network = Net::Works::Network->new_from_string( string => $address );
+```
     
 The next step is to look up an IP address using the reader.  The reader expects a single IP and not a range.  We could get it by splitting our original key on `/`, but in this case we do it with a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object.
 
-    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+```perl
+my $model = $reader->city( ip => $network->first->as_ipv4_string );
+```
 
 All we're doing here is asking for the first IP in the range.  We need to pass the model a `string` rather than an `object`, so we call the `as_ipv4_string()` method.
 
@@ -524,7 +540,7 @@ Now, that looks a little bit better.  Note that we didn't find a city or time zo
 Now we're at the point where we can make use of our database.  With just a few lines of code you can now use your MMDB file to assist in the authorization of your application or VPN users.  For example, you might include the following lines in a class which implements your authentication.
 
 
-```
+```perl
 use MaxMind::DB::Reader;
 
 my $reader = MaxMind::DB::Reader->new( file => '/path/to/users.mmdb' );
