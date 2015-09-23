@@ -29,7 +29,7 @@ my %types = (
 
 my $tree = MaxMind::DB::Writer::Tree->new(
 
-    # "database_type" is some aritrary string describing the database.  AVt
+    # "database_type" is an arbitrary string describing the database.  At
     # MaxMind we use strings like 'GeoIP2-City', 'GeoIP2-Country', etc.
     database_type => 'My-IP-Data',
 
@@ -43,6 +43,11 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 
     # add a callback to validate data going in to the database
     map_key_type_callback => sub { $types{ $_[0] } },
+
+    # let the writer handle merges of IP ranges. if we don't set this then the
+    # default behaviour is for the last network to clobber any overlapping
+    # ranges.
+    merge_record_collisions => 1,
 
     # "record_size" is the record size in bits.  Either 24, 28 or 32.
     record_size => 24,
@@ -61,23 +66,29 @@ my %address_for_employee = (
     },
 );
 
-for my $address ( keys %address_for_employee ) {
+for my $range ( keys %address_for_employee ) {
 
-    # Create one network and insert it into our database
-    my $network = Net::Works::Network->new_from_string( string => $address );
-    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+    my $user_metadata = $address_for_employee{$range};
 
-    my $user_metadata = $address_for_employee{$address};
-    if ( $model->city->name ) {
-        $user_metadata->{city} = $model->city->name;
+    # Iterate over network and insert IPs individually
+    my $network = Net::Works::Network->new_from_string( string => $range );
+    my $iterator = $network->iterator;
+
+    while ( my $address = $iterator->() ) {
+        my $ip = $address->as_ipv4_string;
+        my $model = $reader->city( ip => $ip );
+
+        if ( $model->city->name ) {
+            $user_metadata->{city} = $model->city->name;
+        }
+        if ( $model->country->name ) {
+            $user_metadata->{country} = $model->country->name;
+        }
+        if ( $model->location->time_zone ) {
+            $user_metadata->{time_zone} = $model->location->time_zone;
+        }
+        $tree->insert_network( $network, $user_metadata );
     }
-    if ( $model->country->name ) {
-        $user_metadata->{country} = $model->country->name;
-    }
-    if ( $model->location->time_zone ) {
-        $user_metadata->{time_zone} = $model->location->time_zone;
-    }
-    $tree->insert_network( $network, $user_metadata );
 }
 
 # Write the database to disk.

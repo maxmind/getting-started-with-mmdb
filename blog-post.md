@@ -33,7 +33,7 @@ use Net::Works::Network;
 
 my $filename = 'users.mmdb';
 
-# Your top level data structure will always be a map (hash).  The mmdb format
+# Your top level data structure will always be a map (hash).  The MMDB format
 # is strongly typed.  Describe your data types here.
 # See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
 
@@ -91,7 +91,6 @@ $tree->write_tree( $fh );
 close $fh;
 
 say "$filename has now been created";
-
 ```
 
 ## The Code in Review
@@ -184,7 +183,7 @@ my $reader = MaxMind::DB::Reader->new( file => 'users.mmdb' );
 
 ### Step 3
 
-Check the metadata.  This is optional, but here we check to ensure that we find the description we added to the metadata in the previous script.  
+Check the metadata.  This is optional, but here print the description we added to the metadata in the previous script.
 
 ```perl
 say 'Description: ' . $reader->metadata->{description}->{en};
@@ -363,7 +362,7 @@ my %types = (
 
 my $tree = MaxMind::DB::Writer::Tree->new(
 
-    # "database_type" is some aritrary string describing the database.  AVt
+    # "database_type" is an arbitrary string describing the database.  At
     # MaxMind we use strings like 'GeoIP2-City', 'GeoIP2-Country', etc.
     database_type => 'My-IP-Data',
 
@@ -377,6 +376,11 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 
     # add a callback to validate data going in to the database
     map_key_type_callback => sub { $types{ $_[0] } },
+
+    # let the writer handle merges of IP ranges. if we don't set this then the
+    # default behaviour is for the last network to clobber any overlapping
+    # ranges.
+    merge_record_collisions => 1,
 
     # "record_size" is the record size in bits.  Either 24, 28 or 32.
     record_size => 24,
@@ -395,23 +399,29 @@ my %address_for_employee = (
     },
 );
 
-for my $address ( keys %address_for_employee ) {
+for my $range ( keys %address_for_employee ) {
 
-    # Create one network and insert it into our database
-    my $network = Net::Works::Network->new_from_string( string => $address );
-    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+    my $user_metadata = $address_for_employee{$range};
 
-    my $user_metadata = $address_for_employee{$address};
-    if ( $model->city->name ) {
-        $user_metadata->{city} = $model->city->name;
+    # Iterate over network and insert IPs individually
+    my $network = Net::Works::Network->new_from_string( string => $range );
+    my $iterator = $network->iterator;
+
+    while ( my $address = $iterator->() ) {
+        my $ip = $address->as_ipv4_string;
+        my $model = $reader->city( ip => $ip );
+
+        if ( $model->city->name ) {
+            $user_metadata->{city} = $model->city->name;
+        }
+        if ( $model->country->name ) {
+            $user_metadata->{country} = $model->country->name;
+        }
+        if ( $model->location->time_zone ) {
+            $user_metadata->{time_zone} = $model->location->time_zone;
+        }
+        $tree->insert_network( $network, $user_metadata );
     }
-    if ( $model->country->name ) {
-        $user_metadata->{country} = $model->country->name;
-    }
-    if ( $model->location->time_zone ) {
-        $user_metadata->{time_zone} = $model->location->time_zone;
-    }
-    $tree->insert_network( $network, $user_metadata );
 }
 
 # Write the database to disk.
@@ -474,33 +484,54 @@ Note that this file may be in a different location if you're not using `Vagrant`
 Now, we take our existing data so that we can augment it with GeoIP2 data.
 
 ```perl
-    my $network = Net::Works::Network->new_from_string( string => $address );
-    my $model = $reader->city( ip => $network->first->as_ipv4_string );
+    my $user_metadata = $address_for_employee{$range};
 
-    my $user_metadata = $address_for_employee{$address};
-    
-    # Create a mashup using an existing GeoIP2 database
-    if ( $model->city->name ) {
-        $user_metadata->{city} = $model->city->name;
-    }
-    if ( $model->location->time_zone ) {
-        $user_metadata->{time_zone} = $model->location->time_zone;
+    # Iterate over network and insert IPs individually
+    my $network = Net::Works::Network->new_from_string( string => $range );
+    my $iterator = $network->iterator;
+
+    while ( my $address = $iterator->() ) {
+        my $ip = $address->as_ipv4_string;
+        my $model = $reader->city( ip => $ip );
+        
+        if ( $model->city->name ) {
+            $user_metadata->{city} = $model->city->name;
+        }
+        if ( $model->country->name ) {
+            $user_metadata->{country} = $model->country->name;
+        }
+        if ( $model->location->time_zone ) {
+            $user_metadata->{time_zone} = $model->location->time_zone;
+        }
+        $tree->insert_network( $network, $user_metadata );
     }
 ```
 
-As in our first example, we're create a new `$network`.
+As in our first example, we're create a new `Net::Works::Network` object.  However, in this case we are going to insert each individual IP in the range.  The reason for this is that we don't know if our IP ranges match the ranges in the GeoLite2 database.  If we just rely on using the reader data for some arbitrary IP in the range, we can't be 100% sure that this is representative of all other IPs in the range.  If we insert each IP in the range, we don't need to rely on the assumption that the data for a random IP will be consistent across our ranges.
+
+In order for this to work, we set `merge_record_collisions => 1` when we created the `MaxMind::DB::Writer::Tree` object.  This allows the writer to be smart about merging ranges rather than letting the last range to be added clobber any overlapping addresses.
+
+Note that this approach is fine for a small database, but it likely will not scale well in terms of creating speed for a database with a large number of records.  If you're looking to create a very large database and speed is an issue, you are encouraged to look into using the MaxMind CSVs to seed your database.  Alternatively, you could first check the IP ranges in GeoLite2-City-Blocks-IPv4.csv to check for any overlapping ranges before inserting.  If there are no overlaps, you can insert the entire range at once rather than individual IP addresses.
+
+Iterating over a network is trivial.
 
 ```perl
-my $network = Net::Works::Network->new_from_string( string => $address );
+    my $network = Net::Works::Network->new_from_string( string => $range );
+    my $iterator = $network->iterator;
+
+    while ( my $address = $iterator->() ) {
+        my $ip = $address->as_ipv4_string;
+        ...
+    }
 ```
     
-The next step is to look up an IP address using the reader.  The reader expects a single IP and not a range.  We could get it by splitting our original key on `/`, but in this case we do it with a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object.
+The next step is to look up an IP address using the reader.
 
 ```perl
-my $model = $reader->city( ip => $network->first->as_ipv4_string );
+my $model = $reader->city( ip => $ip );
 ```
 
-All we're doing here is asking for the first IP in the range.  We need to pass the model a `string` rather than an `object`, so we call the `as_ipv4_string()` method.
+We need to pass the model a `string` rather than an `object`, so we call the `as_ipv4_string()` method.
 
 Next we add new keys to `Hash`.  The new keys are `country`, `city` and `time_zone`.  Note that we only add them if they exist.  If we try to add an `undefined` value to the `Hash`, it an exception will be thrown.
 
@@ -508,21 +539,10 @@ Now, let's see what we get.
 
 ```
 vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
-4.4.4.4/32
-\ {
-    country        "US",
-    environments   [
-        [0] "development",
-        [1] "staging",
-        [2] "production"
-    ],
-    expires        86400,
-    name           "Jane"
-}
 8.8.8.0/28
 \ {
     city           "Mountain View",
-    country        "US",
+    country        "United States",
     environments   [
         [0] "development",
         [1] "staging"
@@ -531,9 +551,22 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
     name           "Klaus",
     time_zone      "America/Los_Angeles"
 }
+123.125.71.29/32
+\ {
+    city           "Beijing",
+    country        "China",
+    environments   [
+        [0] "development",
+        [1] "staging",
+        [2] "production"
+    ],
+    expires        86400,
+    name           "Jane",
+    time_zone      "Asia/Shanghai"
+}
 ```
 
-Now, that looks a little bit better.  Note that we didn't find a city or time zone for Jane, so they haven't been included with her metadata.  GeoIP2 contains a lot of data, but there are some coverage gaps, so you'll need to allow for those when putting your custom database together.
+Even though we inserted Klaus's addresses individually, we can see that the writer did the right thing and merged the addresses into an appropriately sized network.
 
 ## Deploying our Application
 
@@ -578,7 +611,7 @@ A very simple way to get started is to iterate over the search tree using `MaxMi
 
 #### Parsing a CSV
 
-This requires slightly more logic, but just reading a CSV file line by line will give you a significant boost in speed.  Free downloads of CSV files for GeoLite2 City and GeoLite2 Country [are available from MaxMind.com](https://dev.maxmind.com/geoip/geoip2/geolite2/)
+This requires slightly more logic, but just reading a CSV file line by line will give you a significant boost in speed.  Free downloads of CSV files for GeoLite2 City and GeoLite2 Country [are available from MaxMind.com](https://dev.maxmind.com/geoip/geoip2/geolite2/)  If you're using the Vagrant VM, you'll find `GeoLite2-City-Blocks-IPv4.csv` and `GeoLite2-City-Locations-en.csv` already in your `/vagrant` directory. `examples/06-read-csv.pl` will give you a head start on parsing these CSVs.
 
 ### Insert Order, Merging and Overwriting
 
