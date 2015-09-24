@@ -12,7 +12,5 @@ my $tx = Text::Xslate->new(
     syntax => 'TTerse'
 );
 
-my $output = path( 'blog-post.md' );
-
-$output->spew( $tx->render( 'blog-post.md' ) );
+path( 'blog-post.md' )->spew( $tx->render( 'blog-post.md' ) );
 
