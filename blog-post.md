@@ -510,7 +510,7 @@ As in our first example, we're create a new `Net::Works::Network` object.  Howev
 
 In order for this to work, we set `merge_record_collisions => 1` when we created the `MaxMind::DB::Writer::Tree` object.  This allows the writer to be smart about merging ranges rather than letting the last range to be added clobber any overlapping addresses.
 
-Note that this approach is fine for a small database, but it likely will not scale well in terms of speed when writing a database with a large number of records.  If you're looking to create a very large database and speed is an issue, you are encouraged to look into using the MaxMind CSVs to seed your database.  Alternatively, you could first check the IP ranges in GeoLite2-City-Blocks-IPv4.csv to check for any overlapping ranges before inserting.  If there are no overlaps, you can insert the entire range at once rather than individual IP addresses.
+Note that this approach is fine for a small database, but it likely will not scale well in terms of speed when writing a database with a large number of records.  If you're looking to create a very large database and writing speed is an issue, you are encouraged to look into using the MaxMind CSVs to seed your database.
 
 Iterating over a network is trivial.
 
