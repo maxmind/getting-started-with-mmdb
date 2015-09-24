@@ -91,6 +91,7 @@ $tree->write_tree( $fh );
 close $fh;
 
 say "$filename has now been created";
+
 ```
 
 ## The Code in Review
@@ -159,6 +160,7 @@ say 'Description: ' . $reader->metadata->{description}->{en};
 
 my $record = $reader->record_for_address( $ip );
 say np $record;
+
 ```
 
 ## Reading the File Reading: Review
@@ -279,6 +281,7 @@ $reader->iterate_search_tree(
         say np $data;
     }
 );
+
 ```
 
 
@@ -346,7 +349,7 @@ my $reader   = GeoIP2::Database::Reader->new(
     locales => ['en'],
 );
 
-# Your top level data structure will always be a map (hash).  The mmdb format
+# Your top level data structure will always be a map (hash).  The MMDB format
 # is strongly typed.  Describe your data types here.
 # See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
 
@@ -429,6 +432,7 @@ $tree->write_tree( $fh );
 close $fh;
 
 say "$filename has now been created";
+
 ```
 
 Now, when we iterate of the search tree, we'll see that the data has been augmented with the new fields.

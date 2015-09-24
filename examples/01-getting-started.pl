@@ -9,7 +9,7 @@ use Net::Works::Network;
 
 my $filename = 'users.mmdb';
 
-# Your top level data structure will always be a map (hash).  The mmdb format
+# Your top level data structure will always be a map (hash).  The MMDB format
 # is strongly typed.  Describe your data types here.
 # See https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES
 
