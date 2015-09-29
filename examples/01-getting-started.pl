@@ -21,7 +21,7 @@ my %types = (
 
 my $tree = MaxMind::DB::Writer::Tree->new(
 
-    # "database_type" is some aritrary string describing the database.  AVt
+    # "database_type" is some aritrary string describing the database.  At
     # MaxMind we use strings like 'GeoIP2-City', 'GeoIP2-Country', etc.
     database_type => 'My-IP-Data',
 
