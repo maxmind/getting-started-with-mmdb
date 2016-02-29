@@ -92,7 +92,7 @@ Vagrant.configure(2) do |config|
 
       rm -rf /tmp/csv
       mkdir  /tmp/csv
-      curl https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/csv/GeoLite2-City-CSV.zip
+      curl https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/GeoLite2-City-CSV.zip
       unzip -o /tmp/GeoLite2-City-CSV.zip -d /tmp/csv/
       find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
       find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
