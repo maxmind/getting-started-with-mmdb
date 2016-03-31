@@ -1,5 +1,5 @@
 # Building Your Own MMDB Database for Fun and Profit
-If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md). 
+If you use a GeoIP database, you're probably familiar with MaxMind's [MMDB format](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md).
 
 At MaxMind, we created the MMDB format because we needed a format that was very fast and highly portable.  MMDB comes with supported readers in many languages.  In this blog post, we’ll create an MMDB file which contains a whitelist of IP addresses.  This kind of database could be used when allowing access to a VPN or a hosted application.
 
@@ -12,9 +12,9 @@ The code samples I include here use the [Perl MMDB database writer](https://meta
 Use [our GitHub repository](https://github.com/maxmind/getting-started-with-mmdb) to follow along with the actual scripts.  Fire up a pre-configured Vagrant VM or just install the required modules manually.
 
 ## Getting Started
-    
+
 In our example, we want to whitelist some IP addresses to allow them access to a VPN or a hosted application.  For each IP address or IP range, we need to track a few things about the person who is connecting from this IP.
- 
+
  * name
  * development environments to which they need access
  * an arbitrary session expiration time, defined in seconds
@@ -29,7 +29,6 @@ use warnings;
 use feature qw( say );
 
 use MaxMind::DB::Writer::Tree;
-use Net::Works::Network;
 
 my $filename = 'users.mmdb';
 
@@ -77,11 +76,7 @@ my %address_for_employee = (
     },
 );
 
-for my $address ( keys %address_for_employee ) {
-
-    # Create one network and insert it into our database
-    my $network = Net::Works::Network->new_from_string( string => $address );
-
+for my $network ( keys %address_for_employee ) {
     $tree->insert_network( $network, $address_for_employee{$address} );
 }
 
@@ -96,8 +91,8 @@ say "$filename has now been created";
 
 ## The Code in Review
 
-### Step 1 
-Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory as it is created.  
+### Step 1
+Create a new [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree) object.  The tree is where the database is stored in memory as it is created.
 
 ```perl
 MaxMind::DB::Writer::Tree->new(...)
@@ -108,10 +103,16 @@ The options we've used are all commented in the script, but there are additional
 We haven't used all available types in this script.  For example, we also could have used a `map` to store some of these valued.  You're encouraged to review [the full list of available types](https://metacpan.org/pod/MaxMind::DB::Writer::Tree#DATA-TYPES) which can be used in `map_key_type_callback`.
 
 ### Step 2
-For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a [Net::Works::Network](https://metacpan.org/pod/Net::Works::Network) object, which is essentially just a representation of the IP range.  The second is a hash reference of values which describe the IP range.
+For each IP address or range, we call the `insert_network()` method.  This method takes two arguments.  The first is a CIDR representation of the network. The second is a hash reference of values which describe the IP range.
 
 ```perl
 $tree->insert_network( $network, $address_for_employee{$address} );
+```
+
+If you wish to insert an IP address range, use the `insert_range()` method instead:
+
+```perl
+$tree->insert_range( $first_ip, $last_ip, $address_for_employee{$address} );
 ```
 
 We've inserted information about two employees, Jane and Klaus.  They're both on different IP ranges.  You'll see that Jane has access to more environments than Klaus has, but Klaus could theoretically connect from any of 16 different IP addresses (/28) whereas Jane will only connect from one (/32).
@@ -128,13 +129,13 @@ close $fh;
 ## Let's Do This
 
 Now we're ready to run the script.
-    
+
     perl examples/01-getting-started.pl
-    
+
 Your output should look something like:
 
     users.mmdb has now been created
-    
+
 You should also see the file mentioned above in the folder from which you ran the script.
 
 ## Reading the File
@@ -150,7 +151,6 @@ use feature qw( say );
 
 use Data::Printer;
 use MaxMind::DB::Reader;
-use Net::Works::Address;
 
 my $ip = shift @ARGV or die 'Usage: perl examples/02-reader.pl [ip_address]';
 
@@ -205,8 +205,8 @@ say np $record_for_jane;
 Now let's run the script and perform a lookup on Jane's IP address:
 
     perl examples/02-reader.pl 123.125.71.29
-    
-Your output should look something like this: 
+
+Your output should look something like this:
 
 ```perl
 vagrant@precise64:/vagrant$ perl examples/02-reader.pl 123.125.71.29
@@ -465,7 +465,7 @@ vagrant@precise64:/vagrant$ perl examples/03-iterate-search-tree.pl
     time_zone      "Asia/Shanghai"
 }
 ```
- 
+
 ## Adding GeoLite2-City Data: Review
 
 To extend our example we make two additions to our original file:
@@ -496,7 +496,7 @@ Now, we take our existing data so that we can augment it with GeoIP2 data.
     while ( my $address = $iterator->() ) {
         my $ip = $address->as_ipv4_string;
         my $model = $reader->city( ip => $ip );
-        
+
         if ( $model->city->name ) {
             $user_metadata->{city} = $model->city->name;
         }
@@ -527,7 +527,7 @@ Iterating over a network is trivial.
         ...
     }
 ```
-    
+
 The next step is to look up an IP address using the reader.
 
 ```perl
