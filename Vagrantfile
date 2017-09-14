@@ -66,26 +66,28 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
    config.vm.provision "shell", inline: <<-SHELL
 
-      sudo aptitude update
-      # install 'add-apt-repository'
-      sudo aptitude install -y python-software-properties software-properties-common
+      # Don't do this more than once in an hour
+      if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -60)" ]; then
+          sudo aptitude update
+          # install 'add-apt-repository'
+          sudo aptitude install -y python-software-properties software-properties-common
 
-      sudo add-apt-repository ppa:maxmind/ppa
-      sudo aptitude update
+          sudo add-apt-repository ppa:maxmind/ppa
+          sudo aptitude update
+      fi
 
       # Make subsequent provisioning work if initial install has failed
       sudo rm -f /etc/GeoIP.conf
 
       # 'make' is part of build-essential
-      sudo aptitude install -y build-essential curl libmaxminddb0 libmaxminddb-dev mmdb-bin unzip
-
-      sudo aptitude install -y geoipupdate
-
-      # install cpanm
-      curl -L https://cpanmin.us | perl - App::cpanminus
+      sudo aptitude install -y build-essential cpanminus curl geoipupdate libmaxminddb0 libmaxminddb-dev mmdb-bin unzip
 
       # install Perl modules from CPAN
-      cpanm --notest Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network GeoIP2 Data::Printer Text::CSV_XS
+      cpanm --notest App::cpm
+
+      # Faster installs via cpm.  Defaults to using cpanfile.
+      cd /vagrant
+      cpm install --without-test
 
       sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
       sudo geoipupdate
