@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use feature qw( say );
+use local::lib 'local';
 
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
