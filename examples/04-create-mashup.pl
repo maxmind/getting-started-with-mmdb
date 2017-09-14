@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use feature qw( say );
+use local::lib 'local';
 
 use GeoIP2::Database::Reader;
 use MaxMind::DB::Writer::Tree;
@@ -46,8 +47,9 @@ my $tree = MaxMind::DB::Writer::Tree->new(
 
     # let the writer handle merges of IP ranges. if we don't set this then the
     # default behaviour is for the last network to clobber any overlapping
-    # ranges.
-    merge_record_collisions => 1,
+    # ranges.  See https://metacpan.org/pod/MaxMind::DB::Writer::Tree for
+    # merge_strategy options.
+    merge_strategy => 'recurse',
 
     # "record_size" is the record size in bits.  Either 24, 28 or 32.
     record_size => 24,

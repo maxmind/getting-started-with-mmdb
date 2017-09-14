@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use feature qw( say );
+use local::lib 'local';
 
 use Data::Printer; # exports the np() function
 use Text::CSV_XS qw( csv );
