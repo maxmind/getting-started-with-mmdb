@@ -74,6 +74,7 @@ Vagrant.configure(2) do |config|
           # install 'add-apt-repository'
           sudo aptitude install -y python-software-properties software-properties-common
 
+          sudo apt-add-repository multiverse
           sudo add-apt-repository ppa:maxmind/ppa
           sudo aptitude update
       fi
