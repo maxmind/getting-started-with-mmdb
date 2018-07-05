@@ -83,7 +83,7 @@ Vagrant.configure(2) do |config|
       sudo rm -f /etc/GeoIP.conf
 
       # 'make' is part of build-essential
-      sudo aptitude install -y build-essential cpanminus curl geoipupdate libmaxminddb0 libmaxminddb-dev mmdb-bin unzip
+      sudo aptitude install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
       # install Perl modules from CPAN
       cpanm --notest App::cpm
