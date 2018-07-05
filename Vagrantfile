@@ -66,6 +66,8 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
    config.vm.provision "shell", inline: <<-SHELL
 
+      sudo apt-get install -y aptitude
+
       # Don't do this more than once in an hour
       if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -60)" ]; then
           sudo aptitude update
