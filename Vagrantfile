@@ -68,16 +68,14 @@ Vagrant.configure(2) do |config|
 
       sudo apt-get install -y aptitude
 
-      # Don't do this more than once in an hour
-      if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -60)" ]; then
-          sudo aptitude update
-          # install 'add-apt-repository'
-          sudo aptitude install -y python-software-properties software-properties-common
+      sudo aptitude update
 
-          sudo apt-add-repository multiverse
-          sudo add-apt-repository ppa:maxmind/ppa
-          sudo aptitude update
-      fi
+      # install 'add-apt-repository'
+      sudo aptitude install -y python-software-properties software-properties-common
+
+      sudo apt-add-repository multiverse
+      sudo add-apt-repository ppa:maxmind/ppa
+      sudo aptitude update
 
       # Make subsequent provisioning work if initial install has failed
       sudo rm -f /etc/GeoIP.conf
