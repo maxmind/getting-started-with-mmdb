@@ -91,6 +91,7 @@ Vagrant.configure(2) do |config|
 
       # Faster installs via cpm.  Defaults to using cpanfile.
       cd /vagrant
+      cpanm --notest https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300001.tar.gz
       cpm install --without-test
 
       sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
