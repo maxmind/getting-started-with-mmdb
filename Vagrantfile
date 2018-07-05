@@ -86,6 +86,7 @@ Vagrant.configure(2) do |config|
       sudo aptitude install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
       # install Perl modules from CPAN
+      curl --silent -L https://cpanmin.us | perl - App::cpanminus
       cpanm --notest App::cpm
 
       # Faster installs via cpm.  Defaults to using cpanfile.
