@@ -12,7 +12,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "hashicorp/precise64"
+  config.vm.box = "ubuntu/artful64"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -66,27 +66,26 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
    config.vm.provision "shell", inline: <<-SHELL
 
-      # Don't do this more than once in an hour
-      if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -60)" ]; then
-          sudo aptitude update
-          # install 'add-apt-repository'
-          sudo aptitude install -y python-software-properties software-properties-common
+      # install 'add-apt-repository'
+      sudo apt-get install -y python-software-properties software-properties-common
 
-          sudo add-apt-repository ppa:maxmind/ppa
-          sudo aptitude update
-      fi
+      sudo apt-add-repository multiverse
+      sudo add-apt-repository ppa:maxmind/ppa
+      sudo apt-get update
 
       # Make subsequent provisioning work if initial install has failed
       sudo rm -f /etc/GeoIP.conf
 
       # 'make' is part of build-essential
-      sudo aptitude install -y build-essential cpanminus curl geoipupdate libmaxminddb0 libmaxminddb-dev mmdb-bin unzip
+      sudo apt-get install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
       # install Perl modules from CPAN
+      curl --silent -L https://cpanmin.us | perl - App::cpanminus
       cpanm --notest App::cpm
 
       # Faster installs via cpm.  Defaults to using cpanfile.
       cd /vagrant
+      cpanm --notest https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300001.tar.gz
       cpm install --without-test
 
       sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
@@ -94,7 +93,7 @@ Vagrant.configure(2) do |config|
 
       rm -rf /tmp/csv
       mkdir  /tmp/csv
-      curl https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/GeoLite2-City-CSV.zip
+      curl --silent https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/GeoLite2-City-CSV.zip
       unzip -o /tmp/GeoLite2-City-CSV.zip -d /tmp/csv/
       find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
       find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
