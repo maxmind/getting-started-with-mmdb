@@ -66,22 +66,18 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
    config.vm.provision "shell", inline: <<-SHELL
 
-      sudo apt-get install -y aptitude
-
-      sudo aptitude update
-
       # install 'add-apt-repository'
-      sudo aptitude install -y python-software-properties software-properties-common
+      sudo apt-get install -y python-software-properties software-properties-common
 
       sudo apt-add-repository multiverse
       sudo add-apt-repository ppa:maxmind/ppa
-      sudo aptitude update
+      sudo apt-get update
 
       # Make subsequent provisioning work if initial install has failed
       sudo rm -f /etc/GeoIP.conf
 
       # 'make' is part of build-essential
-      sudo aptitude install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
+      sudo apt-get install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
       # install Perl modules from CPAN
       curl --silent -L https://cpanmin.us | perl - App::cpanminus
