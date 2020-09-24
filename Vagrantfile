@@ -90,10 +90,11 @@ Vagrant.configure(2) do |config|
       source .env
       set +a
 
+      curl --silent -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&license_key=$LICENSE_KEY&suffix=zip" -o /tmp/GeoLite2-City-CSV.zip
       rm -rf /tmp/csv
-      mkdir  /tmp/csv
-      curl --silent https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/GeoLite2-City-CSV.zip
-      unzip -o /tmp/GeoLite2-City-CSV.zip -d /tmp/csv/
+      mkdir  -p /tmp/csv
+
+      unzip -o /tmp/GeoLite2-City-CSV -d /tmp/csv/
       find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
       find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
   SHELL
