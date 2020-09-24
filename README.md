@@ -1,5 +1,6 @@
 <!-- vim-markdown-toc GFM -->
 
+* [Before You Start](#before-you-start)
 * [Installation](#installation)
   * [Vagrant](#vagrant)
     * [Getting a License Key](#getting-a-license-key)
@@ -14,6 +15,11 @@
     * [GeoLite2-City](#geolite2-city)
 
 <!-- vim-markdown-toc -->
+
+# Before You Start
+
+This repository is quite old and doesn't represent our most modern tooling. If you'd like to get up and running with our currently recommended tools (written in Go), please read the following article: [https://blog.maxmind.com/2020/09/01/enriching-mmdb-files-with-your-own-data-using-go/
+](https://blog.maxmind.com/2020/09/01/enriching-mmdb-files-with-your-own-data-using-go/) If you'd prefer to work with our Perl examples, please read on.
 
 # Installation
 
