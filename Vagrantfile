@@ -67,7 +67,7 @@ Vagrant.configure(2) do |config|
    config.vm.provision 'shell', inline: <<-SHELL
 
       # install 'add-apt-repository'
-      sudo apt-get install -y python-software-properties software-properties-common
+      sudo apt-get install -y software-properties-common
 
       sudo apt-add-repository multiverse
       sudo add-apt-repository ppa:maxmind/ppa
