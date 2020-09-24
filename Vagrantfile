@@ -85,8 +85,10 @@ Vagrant.configure(2) do |config|
       cpm install https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300003.tar.gz
       cpm install --without-test
 
-      sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
-      sudo geoipupdate
+      # Source license key from .env file. It should look like: LICENSE_KEY=23234klj2
+      set -a
+      source .env
+      set +a
 
       rm -rf /tmp/csv
       mkdir  /tmp/csv
