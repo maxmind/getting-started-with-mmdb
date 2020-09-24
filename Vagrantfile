@@ -97,5 +97,13 @@ Vagrant.configure(2) do |config|
       unzip -o /tmp/GeoLite2-City-CSV -d /tmp/csv/
       find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
       find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
+
+      rm -rf /tmp/mmdb
+      mkdir /tmp/mmdb
+      curl --silent -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$LICENSE_KEY&suffix=tar.gz" -o /tmp/GeoLite2-City.tar.gz
+      tar xzvf /tmp/GeoLite2-City.tar.gz --directory /tmp/mmdb
+      sudo mkdir -p /usr/share/GeoIP
+      find /tmp/mmdb -name GeoLite2-City.mmdb |  xargs -I '{}' sudo mv '{}' /usr/share/GeoIP/GeoLite2-City.mmdb
+
   SHELL
 end
