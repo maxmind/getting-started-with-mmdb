@@ -1,5 +1,6 @@
 cpanfile.snapshot
 *.csv
+.env
 example.mmdb
 local
 *.mmdb

@@ -12,7 +12,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/bionic64"
+  config.vm.box = 'bento/ubuntu-20.04'
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -64,38 +64,46 @@ Vagrant.configure(2) do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-   config.vm.provision "shell", inline: <<-SHELL
+   config.vm.provision 'shell', inline: <<-SHELL
 
       # install 'add-apt-repository'
-      sudo apt-get install -y python-software-properties software-properties-common
+      sudo apt-get install -y software-properties-common
 
       sudo apt-add-repository multiverse
       sudo add-apt-repository ppa:maxmind/ppa
       sudo apt-get update
 
-      # Make subsequent provisioning work if initial install has failed
-      sudo rm -f /etc/GeoIP.conf
+      ## 'make' is part of build-essential
+      sudo apt-get install -y build-essential curl liblocal-lib-perl libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
-      # 'make' is part of build-essential
-      sudo apt-get install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
+      ## install Perl modules from CPAN
+      curl -fsSL --compressed https://git.io/cpm > /usr/local/bin/cpm
+      chmod +x /usr/local/bin/cpm
+      cpm --version
 
-      # install Perl modules from CPAN
-      curl --silent -L https://cpanmin.us | perl - App::cpanminus
-      cpanm --notest App::cpm
-
-      # Faster installs via cpm.  Defaults to using cpanfile.
       cd /vagrant
-      cpanm --notest https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300001.tar.gz
+      cpm install https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300003.tar.gz
       cpm install --without-test
 
-      sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
-      sudo geoipupdate
+      # Source license key from .env file. It should look like: LICENSE_KEY=23234klj2
+      set -a
+      source .env
+      set +a
 
+      curl --silent -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City-CSV&license_key=$LICENSE_KEY&suffix=zip" -o /tmp/GeoLite2-City-CSV.zip
       rm -rf /tmp/csv
-      mkdir  /tmp/csv
-      curl --silent https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip > /tmp/GeoLite2-City-CSV.zip
-      unzip -o /tmp/GeoLite2-City-CSV.zip -d /tmp/csv/
+      mkdir  -p /tmp/csv
+
+      unzip -o /tmp/GeoLite2-City-CSV -d /tmp/csv/
       find /tmp/csv/ -name GeoLite2-City-Locations-en.csv | xargs -I '{}' mv '{}' /vagrant/
       find /tmp/csv/ -name GeoLite2-City-Blocks-IPv4.csv | xargs -I '{}' mv '{}' /vagrant/
+
+      rm -rf /tmp/mmdb
+      mkdir /tmp/mmdb
+      curl --silent -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$LICENSE_KEY&suffix=tar.gz" -o /tmp/GeoLite2-City.tar.gz
+      tar xzvf /tmp/GeoLite2-City.tar.gz --directory /tmp/mmdb
+      sudo mkdir -p /usr/share/GeoIP
+      find /tmp/mmdb -name GeoLite2-City.mmdb |  xargs -I '{}' sudo mv '{}' /usr/share/GeoIP/GeoLite2-City.mmdb
+
   SHELL
 end
