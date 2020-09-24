@@ -73,8 +73,8 @@ Vagrant.configure(2) do |config|
       sudo add-apt-repository ppa:maxmind/ppa
       sudo apt-get update
 
-      # Make subsequent provisioning work if initial install has failed
-      sudo rm -f /etc/GeoIP.conf
+      ## 'make' is part of build-essential
+      sudo apt-get install -y build-essential curl liblocal-lib-perl libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
       # 'make' is part of build-essential
       sudo apt-get install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
