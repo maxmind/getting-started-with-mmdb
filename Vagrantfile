@@ -76,16 +76,13 @@ Vagrant.configure(2) do |config|
       ## 'make' is part of build-essential
       sudo apt-get install -y build-essential curl liblocal-lib-perl libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
 
-      # 'make' is part of build-essential
-      sudo apt-get install -y build-essential curl geoipupdate libmaxminddb0 libmaxminddb-dev libnet-ssleay-perl mmdb-bin unzip
+      ## install Perl modules from CPAN
+      curl -fsSL --compressed https://git.io/cpm > /usr/local/bin/cpm
+      chmod +x /usr/local/bin/cpm
+      cpm --version
 
-      # install Perl modules from CPAN
-      curl --silent -L https://cpanmin.us | perl - App::cpanminus
-      cpanm --notest App::cpm
-
-      # Faster installs via cpm.  Defaults to using cpanfile.
       cd /vagrant
-      cpanm --notest https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300001.tar.gz
+      cpm install https://cpan.metacpan.org/authors/id/M/MA/MAXMIND/MaxMind-DB-Writer-0.300003.tar.gz
       cpm install --without-test
 
       sudo cp /vagrant/GeoIP.conf /etc/GeoIP.conf
