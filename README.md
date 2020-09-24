@@ -1,3 +1,17 @@
+<!-- vim-markdown-toc GFM -->
+
+* [Installation](#installation)
+  * [Vagrant](#vagrant)
+  * [Manual Installation](#manual-installation)
+    * [Caveat for Windows Users](#caveat-for-windows-users)
+    * [Perl](#perl)
+    * [libmaxminddb](#libmaxminddb)
+    * [cpanminus](#cpanminus)
+    * [CPAN Modules](#cpan-modules)
+    * [GeoLite2-City](#geolite2-city)
+
+<!-- vim-markdown-toc -->
+
 # Installation
 
 ## Vagrant
@@ -5,9 +19,9 @@
 If you use [Vagrant](https://www.vagrantup.com/), you can get started easily. After cloning this repository, issue the following command from the top level of the repository:
 
     vagrant up
-    
+
 If you are starting this Vagrant VM for the first time, you might want to make yourself a sandwich.  Depending on your setup it could take 6-10 minutes before your VM is ready.  Once the provisioning is finished, you can log in to your VM and start running commands.
-    
+
     vagrant ssh
     cd /vagrant
     perl examples/01-getting-started.pl
@@ -46,11 +60,11 @@ We've chosen to install _without_ `sudo`, so that we don't interfere with any mo
 Now that we have a tool to install our Perl modules, let's go ahead and install the modules we need to write an MMDB file.  I should add the caveat that we don't currently have Windows support for our writer, so you'll need access to a *nix or Mac OS X environment to play along.  If you do have a Windows machine, an Ubuntu VM or something similar will be just fine.
 
     cpanm Devel::Refcount MaxMind::DB::Reader::XS MaxMind::DB::Writer::Tree Net::Works::Network GeoIP2 Data::Printer
-    
+
 If you're on Mac OS X and the above install fails, you can try forcing a 64 bit architecture:
 
     ARCHFLAGS="-arch x86_64" cpanm MaxMind::DB::Writer::Tree Net::Works::Network
-    
+
 Now you're ready to start running scripts:
 
     perl examples/01-getting-started.pl
