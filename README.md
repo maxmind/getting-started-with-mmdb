@@ -1,6 +1,6 @@
 <!-- vim-markdown-toc GFM -->
 
-* [Before You Start](#before-you-start)
+* [Deprecated](#deprecated)
 * [Installation](#installation)
   * [Vagrant](#vagrant)
     * [Getting a License Key](#getting-a-license-key)
@@ -16,10 +16,9 @@
 
 <!-- vim-markdown-toc -->
 
-# Before You Start
+# Deprecated
 
-This repository is quite old and doesn't represent our most modern tooling. If you'd like to get up and running with our currently recommended tools (written in Go), please read the following article: [https://blog.maxmind.com/2020/09/01/enriching-mmdb-files-with-your-own-data-using-go/
-](https://blog.maxmind.com/2020/09/01/enriching-mmdb-files-with-your-own-data-using-go/) If you'd prefer to work with our Perl examples, please read on.
+The Perl `MaxMind-DB-Writer` distribution is no longer being developed. We recommend that you use the [Go `github.com/maxmind/mmdbwriter` module](https://pkg.go.dev/github.com/maxmind/mmdbwriter) instead. See our [blog post on using the Go writer](https://blog.maxmind.com/2020/09/01/enriching-mmdb-files-with-your-own-data-using-go/) for more information.
 
 # Installation
 
